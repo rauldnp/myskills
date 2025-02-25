@@ -66,72 +66,9 @@
     </ul>
 </div>
 <script type="text/javascript">
-    // create an array with nodes
-    var nodes = new vis.DataSet([
-        {id: 1, label: 'Raul', shape: 'circle', font: {vadjust: 50}},
-        {id: 2, label: 'Gestão de Projetos', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 3, label: 'Desenvolvimento de Software', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 4, label: 'Inteligência Artificial', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 5, label: 'Metodologias Ágeis', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 6, label: 'Python', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 7, label: 'Machine Learning', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 8, label: 'RPA', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 9, label: 'Process Mining', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 10, label: 'Power BI', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 11, label: 'SQL', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 12, label: 'Cloud Computing', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 13, label: 'Ferramentas de ETL', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 14, label: 'Automação Web', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 15, label: 'Análise de Dados', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 16, label: 'Modelagem de Dados', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 17, label: 'Infraestrutura', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 18, label: 'Sistemas Operacionais', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 19, label: 'Orquestrador de processos ETL', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 20, label: 'Inferencia local', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 21, label: 'Processamento de linguagem natural', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 22, label: 'Agentes de IA', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 23, label: 'chatbots inteligentes', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 24, label: 'Automação de tarefas repetitivas', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 25, label: 'Selenium', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 26, label: 'Pentaho', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 27, label: 'Airflow', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 28, label: 'Azure', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 29, label: 'Google Cloud', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
-        {id: 30, label: 'Oracle', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}}
-    ]);
-
-    // create an array with edges
-    var edges = new vis.DataSet([
-        {from: 1, to: 2},
-        {from: 1, to: 3},
-        {from: 1, to: 4},
-        {from: 2, to: 5},
-        {from: 3, to: 6},
-        {from: 3, to: 14},
-        {from: 4, to: 7},
-        {from: 4, to: 8},
-        {from: 4, to: 9},
-        {from: 4, to: 10},
-        {from: 4, to: 11},
-        {from: 4, to: 12},
-        {from: 4, to: 13},
-        {from: 4, to: 15},
-        {from: 4, to: 16},
-        {from: 4, to: 17},
-        {from: 4, to: 18},
-        {from: 4, to: 19},
-        {from: 4, to: 20},
-        {from: 4, to: 21},
-        {from: 4, to: 22},
-        {from: 4, to: 23},
-        {from: 4, to: 24},
-        {from: 4, to: 25},
-        {from: 4, to: 26},
-        {from: 4, to: 27},
-        {from: 4, to: 28},
-        {from: 4, to: 29},
-        {from: 4, to: 30}
-    ]);
+    // create an empty DataSet for nodes and edges
+    var nodes = new vis.DataSet();
+    var edges = new vis.DataSet();
 
     // create a network
     var container = document.getElementById('mynetwork');
@@ -247,6 +184,53 @@
         }
         nodes.update(updateArray);
     });
+
+    async function fetchSkillsTable() {
+        const response = await fetch('skills_table.md');
+        const text = await response.text();
+        return text;
+    }
+
+    function parseSkillsTable(md) {
+        const lines = md.split('\n');
+        const headers = lines[1].split('|').map(header => header.trim());
+        const data = lines.slice(2).map(line => {
+            const cells = line.split('|').map(cell => cell.trim());
+            return headers.reduce((obj, header, index) => {
+                obj[header] = cells[index];
+                return obj;
+            }, {});
+        });
+        return data;
+    }
+
+    async function updateGraph() {
+        const md = await fetchSkillsTable();
+        const skills = parseSkillsTable(md);
+
+        const newNodes = [];
+        const newEdges = [];
+        const nodeIds = new Set();
+
+        skills.forEach(skill => {
+            if (!nodeIds.has(skill['Item Pai'])) {
+                newNodes.push({ id: skill['Item Pai'], label: skill['Item Pai'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 } });
+                nodeIds.add(skill['Item Pai']);
+            }
+            if (!nodeIds.has(skill['Texto para Visualização no Gráfico'])) {
+                newNodes.push({ id: skill['Texto para Visualização no Gráfico'], label: skill['Texto para Visualização no Gráfico'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 } });
+                nodeIds.add(skill['Texto para Visualização no Gráfico']);
+            }
+            newEdges.push({ from: skill['Item Pai'], to: skill['Texto para Visualização no Gráfico'] });
+        });
+
+        nodes.clear();
+        edges.clear();
+        nodes.add(newNodes);
+        edges.add(newEdges);
+    }
+
+    document.addEventListener('DOMContentLoaded', updateGraph);
 </script>
 </body>
 </html>
