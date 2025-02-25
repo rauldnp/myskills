@@ -186,48 +186,69 @@
     });
 
     async function fetchSkillsTable() {
-        const response = await fetch('skills_table.md');
-        const text = await response.text();
-        return text;
+        try {
+            const response = await fetch('skills_table.md');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const text = await response.text();
+            console.log('Fetched skills table:', text); // Log the fetched markdown content
+            return text;
+        } catch (error) {
+            console.error('Error fetching skills table:', error);
+        }
     }
 
     function parseSkillsTable(md) {
-        const lines = md.split('\n');
-        const headers = lines[1].split('|').map(header => header.trim());
-        const data = lines.slice(2).map(line => {
-            const cells = line.split('|').map(cell => cell.trim());
-            return headers.reduce((obj, header, index) => {
-                obj[header] = cells[index];
-                return obj;
-            }, {});
-        });
-        return data;
+        try {
+            const lines = md.split('\n');
+            const headers = lines[1].split('|').map(header => header.trim());
+            const data = lines.slice(2).map(line => {
+                const cells = line.split('|').map(cell => cell.trim());
+                return headers.reduce((obj, header, index) => {
+                    obj[header] = cells[index];
+                    return obj;
+                }, {});
+            });
+            console.log('Parsed skills table:', data); // Log the parsed data
+            return data;
+        } catch (error) {
+            console.error('Error parsing skills table:', error);
+        }
     }
 
     async function updateGraph() {
-        const md = await fetchSkillsTable();
-        const skills = parseSkillsTable(md);
+        try {
+            const md = await fetchSkillsTable();
+            if (!md) return; // Exit if fetching failed
+            const skills = parseSkillsTable(md);
 
-        const newNodes = [];
-        const newEdges = [];
-        const nodeIds = new Set();
+            const newNodes = [];
+            const newEdges = [];
+            const nodeIds = new Set();
 
-        skills.forEach(skill => {
-            if (!nodeIds.has(skill['Item Pai'])) {
-                newNodes.push({ id: skill['Item Pai'], label: skill['Item Pai'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 } });
-                nodeIds.add(skill['Item Pai']);
-            }
-            if (!nodeIds.has(skill['Texto para Visualização no Gráfico'])) {
-                newNodes.push({ id: skill['Texto para Visualização no Gráfico'], label: skill['Texto para Visualização no Gráfico'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 } });
-                nodeIds.add(skill['Texto para Visualização no Gráfico']);
-            }
-            newEdges.push({ from: skill['Item Pai'], to: skill['Texto para Visualização no Gráfico'] });
-        });
+            skills.forEach(skill => {
+                if (!nodeIds.has(skill['Item Pai'])) {
+                    newNodes.push({ id: skill['Item Pai'], label: skill['Item Pai'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 } });
+                    nodeIds.add(skill['Item Pai']);
+                }
+                if (!nodeIds.has(skill['Texto para Visualização no Gráfico'])) {
+                    newNodes.push({ id: skill['Texto para Visualização no Gráfico'], label: skill['Texto para Visualização no Gráfico'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 } });
+                    nodeIds.add(skill['Texto para Visualização no Gráfico']);
+                }
+                newEdges.push({ from: skill['Item Pai'], to: skill['Texto para Visualização no Gráfico'] });
+            });
 
-        nodes.clear();
-        edges.clear();
-        nodes.add(newNodes);
-        edges.add(newEdges);
+            console.log('New nodes:', newNodes); // Log the new nodes
+            console.log('New edges:', newEdges); // Log the new edges
+
+            nodes.clear();
+            edges.clear();
+            nodes.add(newNodes);
+            edges.add(newEdges);
+        } catch (error) {
+            console.error('Error updating graph:', error);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', updateGraph);
