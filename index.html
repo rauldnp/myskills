@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Raul's Portfolio</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #mynetwork {
+            width: 100%;
+            height: 500px;
+            border: 1px solid lightgray;
+            margin-bottom: 20px;
+        }
+        #controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Raul's Portfolio</h1>
+</header>
+<div class="container">
+    <h2>Skills Network</h2>
+    <div id="mynetwork"></div>
+    <div id="controls">
+        <button onclick="fitNetwork()">Fit</button>
+        <button id="showButton" onclick="toggleShow()">Start a show!</button>
+    </div>
+    <h2>About Me</h2>
+    <p>Sou Raul, um profissional apaixonado por transformar ideias em realidade através da tecnologia e da gestão estratégica. Sou um entusiasta da interseção entre Gerenciamento de Projetos, Desenvolvimento de Software e Inteligência Artificial. Acredito que a combinação dessas áreas é fundamental para construir soluções que não apenas funcionam, mas que também geram valor real e impacto positivo nos negócios e na sociedade.</p>
+    <h2>Projects</h2>
+    <ul>
+        <li>Orquestrador de processos ETL</li>
+        <li>Process Mining</li>
+    </ul>
+</div>
+<script type="text/javascript">
+    // create an array with nodes
+    var nodes = new vis.DataSet([
+        {id: 1, label: 'Raul', shape: 'circle', font: {vadjust: 50}},
+        {id: 2, label: 'Gestão de Projetos', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 3, label: 'Desenvolvimento de Software', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 4, label: 'Inteligência Artificial', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 5, label: 'Metodologias Ágeis', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 6, label: 'Python', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 7, label: 'Machine Learning', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 8, label: 'RPA', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 9, label: 'Process Mining', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 10, label: 'Power BI', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 11, label: 'SQL', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 12, label: 'Cloud Computing', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 13, label: 'Ferramentas de ETL', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 14, label: 'Automação Web', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 15, label: 'Análise de Dados', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 16, label: 'Modelagem de Dados', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 17, label: 'Infraestrutura', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 18, label: 'Sistemas Operacionais', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 19, label: 'Orquestrador de processos ETL', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 20, label: 'Inferencia local', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 21, label: 'Processamento de linguagem natural', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 22, label: 'Agentes de IA', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 23, label: 'chatbots inteligentes', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 24, label: 'Automação de tarefas repetitivas', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 25, label: 'Selenium', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 26, label: 'Pentaho', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 27, label: 'Airflow', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 28, label: 'Azure', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 29, label: 'Google Cloud', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}},
+        {id: 30, label: 'Oracle', color: getRandomColor(), shape: 'circle', font: {vadjust: 50}}
+    ]);
+
+    // create an array with edges
+    var edges = new vis.DataSet([
+        {from: 1, to: 2},
+        {from: 1, to: 3},
+        {from: 1, to: 4},
+        {from: 2, to: 5},
+        {from: 3, to: 6},
+        {from: 3, to: 14},
+        {from: 4, to: 7},
+        {from: 4, to: 8},
+        {from: 4, to: 9},
+        {from: 4, to: 10},
+        {from: 4, to: 11},
+        {from: 4, to: 12},
+        {from: 4, to: 13},
+        {from: 4, to: 15},
+        {from: 4, to: 16},
+        {from: 4, to: 17},
+        {from: 4, to: 18},
+        {from: 4, to: 19},
+        {from: 4, to: 20},
+        {from: 4, to: 21},
+        {from: 4, to: 22},
+        {from: 4, to: 23},
+        {from: 4, to: 24},
+        {from: 4, to: 25},
+        {from: 4, to: 26},
+        {from: 4, to: 27},
+        {from: 4, to: 28},
+        {from: 4, to: 29},
+        {from: 4, to: 30}
+    ]);
+
+    // create a network
+    var container = document.getElementById('mynetwork');
+    var data = {
+        nodes: nodes,
+        edges: edges
+    };
+    var options = {
+        nodes: {
+            shape: 'dot',
+            scaling: {
+                min: 10,
+                max: 30
+            },
+            font: {
+                size: 12,
+                face: 'Tahoma'
+            }
+        },
+        edges: {
+            width: 0.15,
+            color: { inherit: 'from' },
+            smooth: {
+                type: 'continuous'
+            }
+        },
+        physics: {
+            enabled: true,
+            barnesHut: {
+                gravitationalConstant: -80000,
+                springConstant: 0.001,
+                springLength: 200
+            },
+            stabilization: {
+                iterations: 2500
+            }
+        },
+        interaction: {
+            tooltipDelay: 200,
+            hideEdgesOnDrag: true
+        }
+    };
+    var network = new vis.Network(container, data, options);
+
+    var showInterval;
+
+    // function to fit the network
+    function fitNetwork() {
+        clearInterval(showInterval);
+        network.fit();
+        document.getElementById('showButton').innerText = 'Start a show!';
+    }
+
+    // function to toggle the show
+    function toggleShow() {
+        var showButton = document.getElementById('showButton');
+        if (showButton.innerText === 'Start a show!') {
+            startShow();
+            showButton.innerText = 'Stop the show!';
+        } else {
+            stopShow();
+            showButton.innerText = 'Start a show!';
+            fitNetwork();
+        }
+    }
+
+    // function to start a show
+    function startShow() {
+        var nodesArray = nodes.getIds();
+        var index = 0;
+        function moveToNextNode() {
+            if (index < nodesArray.length) {
+                network.focus(nodesArray[index], {scale: 1.5, animation: {duration: 1000, easingFunction: 'easeInOutQuad'}});
+                index++;
+            } else {
+                clearInterval(showInterval);
+            }
+        }
+        showInterval = setInterval(moveToNextNode, 1500);
+    }
+
+    // function to stop the show
+    function stopShow() {
+        clearInterval(showInterval);
+    }
+
+    // function to get a random color
+    function getRandomColor() {
+        var letters = '0123456789ABCDEF';
+        var color = '#';
+        for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // function to highlight neighbors
+    network.on('click', function (params) {
+        var allNodes = nodes.get({ returnType: 'Object' });
+        var selectedNode = params.nodes[0];
+        var connectedNodes = network.getConnectedNodes(selectedNode);
+        var updateArray = [];
+
+        for (var nodeId in allNodes) {
+            if (allNodes.hasOwnProperty(nodeId)) {
+                if (connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode) {
+                    allNodes[nodeId].color = 'red';
+                } else {
+                    allNodes[nodeId].color = 'gray';
+                }
+                updateArray.push(allNodes[nodeId]);
+            }
+        }
+        nodes.update(updateArray);
+    });
+</script>
+</body>
+</html>
