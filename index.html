@@ -201,10 +201,14 @@
 
     function parseSkillsTable(md) {
         try {
+            console.log('Raw markdown content:', md); // Log the raw markdown content
             const lines = md.split('\n');
+            console.log('Split lines:', lines); // Log the split lines
             const headers = lines[1].split('|').map(header => header.trim());
+            console.log('Parsed headers:', headers); // Log the parsed headers
             const data = lines.slice(2).map(line => {
                 const cells = line.split('|').map(cell => cell.trim());
+                console.log('Parsed cells:', cells); // Log the parsed cells
                 return headers.reduce((obj, header, index) => {
                     obj[header] = cells[index];
                     return obj;
@@ -228,6 +232,7 @@
             const nodeIds = new Set();
 
             skills.forEach(skill => {
+                console.log('Processing skill:', skill); // Log each skill being processed
                 if (!nodeIds.has(skill['Item Pai'])) {
                     newNodes.push({ id: skill['Item Pai'], label: skill['Item Pai'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 } });
                     nodeIds.add(skill['Item Pai']);
@@ -246,6 +251,8 @@
             edges.clear();
             nodes.add(newNodes);
             edges.add(newEdges);
+
+            console.log('Graph updated successfully'); // Log the graph update
         } catch (error) {
             console.error('Error updating graph:', error);
         }
