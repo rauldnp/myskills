@@ -210,6 +210,7 @@
                 throw new Error('No headers found in the markdown content');
             }
             const data = lines.slice(3).map(line => {
+                if (line.includes('---')) return null; // Skip separator lines
                 const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
                 console.log('Parsed cells:', cells); // Log the parsed cells
                 if (cells.length !== headers.length) {
