@@ -206,14 +206,21 @@
             console.log('Split lines:', lines); // Log the split lines
             const headers = lines[1].split('|').map(header => header.trim());
             console.log('Parsed headers:', headers); // Log the parsed headers
+            if (headers.length === 0) {
+                throw new Error('No headers found in the markdown content');
+            }
             const data = lines.slice(2).map(line => {
                 const cells = line.split('|').map(cell => cell.trim());
                 console.log('Parsed cells:', cells); // Log the parsed cells
+                if (cells.length !== headers.length) {
+                    console.warn('Skipping line due to mismatched cell count:', line);
+                    return null;
+                }
                 return headers.reduce((obj, header, index) => {
                     obj[header] = cells[index];
                     return obj;
                 }, {});
-            });
+            }).filter(row => row !== null);
             console.log('Parsed skills table:', data); // Log the parsed data
             return data;
         } catch (error) {
