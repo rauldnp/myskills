@@ -204,13 +204,13 @@
             console.log('Raw markdown content:', md); // Log the raw markdown content
             const lines = md.split('\n');
             console.log('Split lines:', lines); // Log the split lines
-            const headers = lines[2].split('|').map(header => header.trim());
+            const headers = lines[2].split('|').map(header => header.trim()).filter(header => header !== '');
             console.log('Parsed headers:', headers); // Log the parsed headers
             if (headers.length === 0) {
                 throw new Error('No headers found in the markdown content');
             }
             const data = lines.slice(3).map(line => {
-                const cells = line.split('|').map(cell => cell.trim());
+                const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
                 console.log('Parsed cells:', cells); // Log the parsed cells
                 if (cells.length !== headers.length) {
                     console.warn('Skipping line due to mismatched cell count:', line);
