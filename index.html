@@ -164,12 +164,16 @@
             
             if (nodeData.url) {
                 console.log('Original URL:', nodeData.url);
-                // Verifica se a URL é relativa e a converte para absoluta
-                const baseUrl = window.location.href.replace(/\/[^/]*$/, '/');
-                console.log('Base URL:', baseUrl);
-                const absoluteUrl = new URL(nodeData.url, baseUrl).href;
-                console.log('Absolute URL:', absoluteUrl);
-                window.open(absoluteUrl, '_blank');
+                try {
+                    // Construir a URL base a partir do domínio GitHub Pages
+                    const baseUrl = 'https://rauldnp.github.io/myskills/';
+                    console.log('Base URL:', baseUrl);
+                    const absoluteUrl = new URL(nodeData.url, baseUrl).href;
+                    console.log('Absolute URL:', absoluteUrl);
+                    window.open(absoluteUrl, '_blank');
+                } catch (error) {
+                    console.error('Error constructing URL:', error);
+                }
             } else {
                 console.log('No URL found for node');
             }
