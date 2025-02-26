@@ -17,11 +17,18 @@
             text-align: center;
         }
 
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
         /* Estilos do index.html */
         #graph-container {
-            width: 500px; /* Alterado para 500px */
-            height: 300px; /* Alterado para 300px */
-            position: relative;
+            width: 100%;
+            height: 400px;
+            position: relative; /* Garante que os controles fiquem relativos a este container */
             overflow: hidden; /* Adicionado para evitar scrollbar se o grafo for maior */
         }
 
@@ -104,15 +111,15 @@
 
         /* Estilos para informações do nó */
         .node-info {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
+            position: fixed; /* Alterado de absolute para fixed */
             background-color: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 5px;
             max-width: 300px;
             z-index: 1000;
             font-size: 12px;
+            color: white;
+            pointer-events: none; /* Evita que a caixa interfira com interações do mouse */
         }
 
         .node-info h3 {
@@ -132,11 +139,12 @@
 <div class="container">
     <h2>Skills Network</h2>
 
-    <div id="graph-container"></div>
-    <div class="controls">
-        <button id="zoom-in">+</button>
-        <button id="zoom-out">-</button>
-        <button id="reset-zoom">⟲</button>
+    <div id="graph-container">
+        <div class="controls">
+            <button id="zoom-in">+</button>
+            <button id="zoom-out">-</button>
+            <button id="reset-zoom">⟲</button>
+        </div>
     </div>
     <div id="node-info" class="node-info" style="display: none;">
         <h3 id="info-title">Nó</h3>
@@ -329,8 +337,8 @@ Sistemas Operacionais,Raul,[README-rauldnp.md](README-rauldnp.md)`;
         });
 
         // Configuração inicial do grafo
-        const width = 500; // Definição da largura fixa para o container
-        const height = 300; // Definição da altura fixa para o container
+        const width = window.innerWidth; // Largura dinâmica baseada na largura da janela
+        const height = 400; // Altura fixa conforme especificado
         const nodeRadius = 10; // Menor raio para comportar mais nós
 
         // Configuração do zoom
@@ -340,21 +348,22 @@ Sistemas Operacionais,Raul,[README-rauldnp.md](README-rauldnp.md)`;
                 svg.attr("transform", event.transform);
             });
 
-        // Criação do SVG principal
+        // Criação do SVG principal com viewBox para melhor escalonamento
         const containerSvg = d3.select("#graph-container")
             .append("svg")
-            .attr("width", width)
+            .attr("width", "100%")
             .attr("height", height)
+            .attr("viewBox", [0, 0, width, height])
             .call(zoom);
 
-        // Adicionando um grupo que será transformado durante o zoom
+        // Adicionando o grupo principal que será transformado durante o zoom
         const svg = containerSvg.append("g");
 
         // Definição da simulação de força para posicionar os nós
         const simulation = d3.forceSimulation(graphData.nodes)
             .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
-            .force("charge", d3.forceManyBody().strength(-150))
-            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("charge", d3.forceManyBody().strength(-200)) // Aumentando a força de repulsão
+            .force("center", d3.forceCenter(width / 2, height / 2)) // Centraliza o grupo inicialmente
             .force("collision", d3.forceCollide().radius(nodeRadius * 2))
             .on("tick", ticked);
 
@@ -442,6 +451,11 @@ Sistemas Operacionais,Raul,[README-rauldnp.md](README-rauldnp.md)`;
 
             infoContent.innerHTML = content;
             nodeInfo.style.display = "block";
+            
+            // Posiciona a caixa próxima ao cursor
+            const padding = 10; // Espaço entre o cursor e a caixa
+            nodeInfo.style.left = (event.pageX + padding) + 'px';
+            nodeInfo.style.top = (event.pageY + padding) + 'px';
         }
 
         // Função para esconder informações do nó
@@ -490,7 +504,7 @@ Sistemas Operacionais,Raul,[README-rauldnp.md](README-rauldnp.md)`;
             }
         }
 
-        // Controles de zoom
+        // Controles de zoom (simplificados)
         d3.select("#zoom-in").on("click", () => {
             containerSvg.transition().call(zoom.scaleBy, 1.3);
         });
@@ -502,7 +516,7 @@ Sistemas Operacionais,Raul,[README-rauldnp.md](README-rauldnp.md)`;
         d3.select("#reset-zoom").on("click", () => {
             containerSvg.transition().call(
                 zoom.transform,
-                d3.zoomIdentity.translate(width / 2, height / 2).scale(1)
+                d3.zoomIdentity
             );
         });
 
@@ -516,17 +530,6 @@ Sistemas Operacionais,Raul,[README-rauldnp.md](README-rauldnp.md)`;
                 d3.select(this).attr("x", labelWidth / 2 + 10);
             });
         }, 100);
-
-        // Inicia com um zoom adequado para visualizar o grafo completo
-        setTimeout(() => {
-            const initialScale = 0.5;
-            containerSvg.call(
-                zoom.transform,
-                d3.zoomIdentity
-                    .translate(width / 2, height / 2)
-                    .scale(initialScale)
-            );
-        }, 500);
     </script>
 
     <h2>About Me</h2>
