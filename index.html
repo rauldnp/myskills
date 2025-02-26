@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Raul's Portfolio</title>
-    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
     <style type="text/css">
         body {
             font-family: Arial, sans-serif;
@@ -16,35 +16,114 @@
             padding: 10px 0;
             text-align: center;
         }
-        .container {
-            width: 80%;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+        /* Estilos do index.html */
+        #graph-container {
+            width: 500px; /* Alterado para 500px */
+            height: 300px; /* Alterado para 300px */
+            position: relative;
+            overflow: hidden; /* Adicionado para evitar scrollbar se o grafo for maior */
         }
-        #mynetwork {
-            width: 100%;
-            height: 500px;
-            border: 1px solid lightgray;
-            margin-bottom: 20px;
+
+        /* Estilos para os nós (círculos) */
+        .node circle {
+            fill: #5c7080;
+            stroke: #394b59;
+            stroke-width: 2px;
+            transition: fill 0.3s, stroke 0.3s;
+            cursor: move; /* Indica que o nó pode ser movido */
         }
-        #controls {
-            text-align: center;
-            margin-bottom: 20px;
+
+        .node:hover circle {
+            fill: #738ba3;
+            stroke: #48aff0;
         }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
+
+        /* Estilos para os rótulos (labels) dos nós */
+        .node-label {
+            font-size: 12px;
+            fill: #a7b6c2;
+            text-anchor: middle;
+            dominant-baseline: hanging;
+            cursor: pointer; /* Indica que o label é clicável */
+        }
+
+        .node-label:hover {
+            fill: #d8e1e8;
+            text-decoration: underline;
+        }
+
+        /* Estilos para os ícones de link */
+        .link-icon {
+            font-size: 10px;
+            fill: #48aff0;
+            cursor: pointer; /* Indica que o ícone é clicável */
+        }
+
+        .link-icon:hover {
+            fill: #2b95d6;
+        }
+
+        /* Estilos para as arestas (links) entre os nós */
+        .link {
+            stroke: #394b59;
+            stroke-width: 1px;
+            stroke-opacity: 0.4;
+            stroke-linecap: round;
+        }
+
+        /* Estilos para o zoom e controles */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .controls button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             border: none;
-            background-color: #333;
-            color: #fff;
+            background-color: #394b59;
+            color: white;
+            font-size: 18px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
         }
-        button:hover {
-            background-color: #555;
+
+        .controls button:hover {
+            background-color: #48aff0;
+        }
+
+        /* Estilos para informações do nó */
+        .node-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 300px;
+            z-index: 1000;
+            font-size: 12px;
+        }
+
+        .node-info h3 {
+            margin-top: 0;
+            color: #48aff0;
         }
     </style>
+    <!-- Inclusão da biblioteca Font Awesome para o ícone de link -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Inclusão da biblioteca D3.js para visualização de dados -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 </head>
 <body>
 <header>
@@ -52,11 +131,404 @@
 </header>
 <div class="container">
     <h2>Skills Network</h2>
-    <div id="mynetwork"></div>
-    <div id="controls">
-        <button onclick="fitNetwork()">Fit</button>
-        <button id="showButton" onclick="toggleShow()">Start a show!</button>
+
+    <div id="graph-container"></div>
+    <div class="controls">
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">-</button>
+        <button id="reset-zoom">⟲</button>
     </div>
+    <div id="node-info" class="node-info" style="display: none;">
+        <h3 id="info-title">Nó</h3>
+        <div id="info-content"></div>
+    </div>
+
+    <script>
+        // Função para processamento do CSV
+        function parseCSVData(csvData) {
+            // Divide o CSV em linhas
+            const lines = csvData.trim().split('\n');
+
+            // Pega o cabeçalho
+            const headers = lines[0].split(',');
+
+            // Processa as linhas de dados
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].split(',');
+                const row = {};
+                for (let j = 0; j < headers.length; j++) {
+                    row[headers[j]] = line[j];
+                }
+                data.push(row);
+            }
+
+            return data;
+        }
+
+        // Função para converter os dados CSV em estrutura de grafo
+        function buildGraphFromCSV(csvData) {
+            const rows = parseCSVData(csvData);
+
+            // Cria um mapa para armazenar os nós únicos
+            const nodesMap = new Map();
+
+            // Identifica todos os nós únicos
+            rows.forEach(row => {
+                const nodeId = row.node_nome;
+                if (!nodesMap.has(nodeId)) {
+                    nodesMap.set(nodeId, {
+                        id: nodeId,
+                        label: nodeId,
+                        url: row.url && row.url !== "undefined" ? row.url : null
+                    });
+                }
+            });
+
+            // Cria as arestas
+            const links = rows.filter(row => row.node_nome_pai).map(row => ({
+                source: row.node_nome_pai,
+                target: row.node_nome
+            }));
+
+            return {
+                nodes: Array.from(nodesMap.values()),
+                links: links
+            };
+        }
+
+        // Dados do CSV
+        const csvData = `node_nome,node_nome_pai,url
+Metodologias Ágeis,Gestão de Projetos,[README-rauldnp.md](README-rauldnp.md)
+Scrum,Metodologias Ágeis,[README-rauldnp.md](README-rauldnp.md)
+Kanban,Metodologias Ágeis,[README-rauldnp.md](README-rauldnp.md)
+Metodologias Tradicionais,Gestão de Projetos,[README-rauldnp.md](README-rauldnp.md)
+PMBOK,Metodologias Tradicionais,[README-rauldnp.md](README-rauldnp.md)
+PMO,Gestão de Projetos,[README-rauldnp.md](README-rauldnp.md)
+Elaboração de Documentação,PMO,[README-rauldnp.md](README-rauldnp.md)
+Ferramentas,Gestão de Projetos,[README-rauldnp.md](README-rauldnp.md)
+Jira,Ferramentas,[README-rauldnp.md](README-rauldnp.md)
+Microsoft Project,Ferramentas,[README-rauldnp.md](README-rauldnp.md)
+Asana,Ferramentas,[README-rauldnp.md](README-rauldnp.md)
+Trello,Ferramentas,[README-rauldnp.md](README-rauldnp.md)
+Mapeamento e Modelagem,Processos,[README-rauldnp.md](README-rauldnp.md)
+Visio,Mapeamento e Modelagem,[README-rauldnp.md](README-rauldnp.md)
+Bizagi,Mapeamento e Modelagem,[README-rauldnp.md](README-rauldnp.md)
+Design Thinking,Processos,[README-rauldnp.md](README-rauldnp.md)
+Comunicação e Liderança,Processos,[README-rauldnp.md](README-rauldnp.md)
+Personal e Professional Coach,Comunicação e Liderança,[README-rauldnp.md](README-rauldnp.md)
+Linguagens de Programação,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+Python,Linguagens de Programação,[conhecimento/python.md](conhecimento/python.md)
+Automação Web,Python,[conhecimento/python.md](conhecimento/python.md#automação-web)
+Selenium,Automação Web,[conhecimento/python.md](conhecimento/python.md#selenium)
+WebDriverManager,Selenium,[conhecimento/python.md](conhecimento/python.md#webdriver-manager)
+WebDriverWait,Selenium,[conhecimento/python.md](conhecimento/python.md#webdriver-wait)
+ChromeOptions,Selenium,[conhecimento/python.md](conhecimento/python.md#chrome-options)
+python-telegram-bot,Automação Web,[conhecimento/python.md](conhecimento/python.md#python-telegram-bot)
+AI,Python,[conhecimento/python.md](conhecimento/python.md#ai)
+google.generativeai,AI,[conhecimento/python.md](conhecimento/python.md#google-generativeai)
+Dados,Python,[conhecimento/python.md](conhecimento/python.md#dados)
+pandas,Dados,[conhecimento/python.md](conhecimento/python.md#pandas)
+openpyxl,Dados,[conhecimento/python.md](conhecimento/python.md#openpyxl)
+requests,Dados,[conhecimento/python.md](conhecimento/python.md#requests)
+xlsxwriter,Dados,[conhecimento/python.md](conhecimento/python.md#xlsxwriter)
+chardet,Dados,[conhecimento/python.md](conhecimento/python.md#chardet)
+docling,Dados,[conhecimento/python.md](conhecimento/python.md#docling)
+PyPDF2,Dados,[conhecimento/python.md](conhecimento/python.md#pypdf2)
+Uso geral,Python,[conhecimento/python.md](conhecimento/python.md#uso-geral)
+logging,Uso geral,[conhecimento/python.md](conhecimento/python.md#logging)
+regex (re),Uso geral,[conhecimento/python.md](conhecimento/python.md#regex-re)
+Asyncio,Uso geral,[conhecimento/python.md](conhecimento/python.md#asyncio)
+Threading,Uso geral,[conhecimento/python.md](conhecimento/python.md#threading)
+Watchdog,Uso geral,[conhecimento/python.md](conhecimento/python.md#watchdog)
+Queue,Uso geral,[conhecimento/python.md](conhecimento/python.md#queue)
+Delphi,Linguagens de Programação,[conhecimento/delphi.md](conhecimento/delphi.md)
+C#,Linguagens de Programação,[conhecimento/csharp.md](conhecimento/csharp.md)
+ASP.NET,Linguagens de Programação,[conhecimento/aspnet.md](conhecimento/aspnet.md)
+Bancos de Dados,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+MySQL,Bancos de Dados,[README-rauldnp.md](README-rauldnp.md)
+PostgreSQL,Bancos de Dados,[README-rauldnp.md](README-rauldnp.md)
+SQL Server,Bancos de Dados,[README-rauldnp.md](README-rauldnp.md)
+Firebird,Bancos de Dados,[README-rauldnp.md](README-rauldnp.md)
+Consultas Avançadas,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+Otimização de Consultas,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+Controle de Versão,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+GitHub,Controle de Versão,[README-rauldnp.md](README-rauldnp.md)
+Testes de Software,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+Design de Software,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+Ambiente de Desenvolvimento,Desenvolvimento de Software,[README-rauldnp.md](README-rauldnp.md)
+VS Code,Ambiente de Desenvolvimento,[README-rauldnp.md](README-rauldnp.md)
+Microsoft Copilot,Ambiente de Desenvolvimento,[README-rauldnp.md](README-rauldnp.md)
+Ambientes Virtuais,Ambiente de Desenvolvimento,[README-rauldnp.md](README-rauldnp.md)
+Windows,Ambiente de Desenvolvimento,[README-rauldnp.md](README-rauldnp.md)
+Linux,Ambiente de Desenvolvimento,[README-rauldnp.md](README-rauldnp.md)
+Ferramentas de Inferência,Inteligência Artificial,[README-rauldnp.md](README-rauldnp.md)
+VLLM,Ferramentas de Inferência,[README-rauldnp.md](README-rauldnp.md)
+litellm,Ferramentas de Inferência,[README-rauldnp.md](README-rauldnp.md)
+ollama,Ferramentas de Inferência,[README-rauldnp.md](README-rauldnp.md)
+google Gemini,Ferramentas de Inferência,[README-rauldnp.md](README-rauldnp.md)
+groq.com,Ferramentas de Inferência,[README-rauldnp.md](README-rauldnp.md)
+OpenAI,Ferramentas de Inferência,[README-rauldnp.md](README-rauldnp.md)
+Modelos de Linguagem,Inteligência Artificial,[README-rauldnp.md](README-rauldnp.md)
+Llama 2,Modelos de Linguagem,[README-rauldnp.md](README-rauldnp.md)
+Falcon,Modelos de Linguagem,[README-rauldnp.md](README-rauldnp.md)
+Frameworks,Inteligência Artificial,[README-rauldnp.md](README-rauldnp.md)
+RAG,Frameworks,[README-rauldnp.md](README-rauldnp.md)
+Langchain,Frameworks,[README-rauldnp.md](README-rauldnp.md)
+Autogen,Frameworks,[README-rauldnp.md](README-rauldnp.md)
+Agentes de IA,Frameworks,[README-rauldnp.md](README-rauldnp.md)
+Power BI,Análise de Dados e BI,[README-rauldnp.md](README-rauldnp.md)
+DAX,Power BI,[README-rauldnp.md](README-rauldnp.md)
+Power Query,Power BI,[README-rauldnp.md](README-rauldnp.md)
+Visualização de Dados,Power BI,[README-rauldnp.md](README-rauldnp.md)
+Criação de Dashboards,Power BI,[README-rauldnp.md](README-rauldnp.md)
+Excel,Análise de Dados e BI,[README-rauldnp.md](README-rauldnp.md)
+Funções Avançadas,Excel,[README-rauldnp.md](README-rauldnp.md)
+VBA,Excel,[README-rauldnp.md](README-rauldnp.md)
+Ferramentas de ETL,Análise de Dados e BI,[README-rauldnp.md](README-rauldnp.md)
+Pentaho,Ferramentas de ETL,[README-rauldnp.md](README-rauldnp.md)
+Airflow,Ferramentas de ETL,[README-rauldnp.md](README-rauldnp.md)
+Modelagem de Dados,Análise de Dados e BI,[README-rauldnp.md](README-rauldnp.md)
+Dimensional,Modelagem de Dados,[README-rauldnp.md](README-rauldnp.md)
+Relacional,Modelagem de Dados,[README-rauldnp.md](README-rauldnp.md)
+Redes de Computadores,Infraestrutura,[README-rauldnp.md](README-rauldnp.md)
+Cloud Computing,Infraestrutura,[README-rauldnp.md](README-rauldnp.md)
+Azure,Cloud Computing,[README-rauldnp.md](README-rauldnp.md)
+Google Cloud,Cloud Computing,[README-rauldnp.md](README-rauldnp.md)
+Oracle,Cloud Computing,[README-rauldnp.md](README-rauldnp.md)
+Windows,Sistemas Operacionais,[README-rauldnp.md](README-rauldnp.md)
+PowerShell,Windows,[README-rauldnp.md](README-rauldnp.md)
+Linux,Sistemas Operacionais,[README-rauldnp.md](README-rauldnp.md)
+Gestão de Projetos,Raul,[README-rauldnp.md](README-rauldnp.md)
+Processos,Raul,[README-rauldnp.md](README-rauldnp.md)
+Desenvolvimento de Software,Raul,[README-rauldnp.md](README-rauldnp.md)
+Inteligência Artificial,Raul,[README-rauldnp.md](README-rauldnp.md)
+Análise de Dados e BI,Raul,[README-rauldnp.md](README-rauldnp.md)
+Infraestrutura,Raul,[README-rauldnp.md](README-rauldnp.md)
+Sistemas Operacionais,Raul,[README-rauldnp.md](README-rauldnp.md)`;
+
+        // Processa os dados do CSV e constrói a estrutura do grafo
+        const graphData = buildGraphFromCSV(csvData);
+
+        // Adiciona nós "raiz" que são referenciados mas não estão presentes nos dados
+        const allNodeIds = new Set(graphData.nodes.map(node => node.id));
+        const parentIds = new Set();
+
+        graphData.links.forEach(link => {
+            parentIds.add(link.source);
+        });
+
+        parentIds.forEach(parentId => {
+            if (!allNodeIds.has(parentId)) {
+                graphData.nodes.push({
+                    id: parentId,
+                    label: parentId,
+                    url: null
+                });
+            }
+        });
+
+        // Configuração inicial do grafo
+        const width = 500; // Definição da largura fixa para o container
+        const height = 300; // Definição da altura fixa para o container
+        const nodeRadius = 10; // Menor raio para comportar mais nós
+
+        // Configuração do zoom
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on("zoom", (event) => {
+                svg.attr("transform", event.transform);
+            });
+
+        // Criação do SVG principal
+        const containerSvg = d3.select("#graph-container")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .call(zoom);
+
+        // Adicionando um grupo que será transformado durante o zoom
+        const svg = containerSvg.append("g");
+
+        // Definição da simulação de força para posicionar os nós
+        const simulation = d3.forceSimulation(graphData.nodes)
+            .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-150))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(nodeRadius * 2))
+            .on("tick", ticked);
+
+        // Criação das arestas (links)
+        const link = svg.append("g")
+            .selectAll("line")
+            .data(graphData.links)
+            .join("line")
+            .attr("class", "link");
+
+        // Criação dos nós
+        const node = svg.append("g")
+            .selectAll(".node")
+            .data(graphData.nodes)
+            .join("g")
+            .attr("class", "node")
+            .on("mouseover", showNodeInfo)
+            .on("mouseout", hideNodeInfo)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        // Adiciona os círculos aos nós (sem evento de clique para URL)
+        node.append("circle")
+            .attr("r", nodeRadius);
+
+        // Adiciona os rótulos (labels) abaixo dos nós
+        const labelGroups = node.append("g")
+            .attr("transform", `translate(0, ${nodeRadius + 5})`);
+
+        // Adiciona o texto do rótulo com evento de clique para URL
+        labelGroups.append("text")
+            .attr("class", "node-label")
+            .text(d => {
+                // Limita o texto a 15 caracteres para melhor visualização
+                return d.label.length > 15 ? d.label.substring(0, 12) + '...' : d.label;
+            })
+            .on("click", handleNodeClick);
+
+        // Adiciona ícones de link para nós com URL
+        labelGroups.filter(d => d.url)
+            .append("text")
+            .attr("class", "link-icon")
+            .attr("font-family", "FontAwesome")
+            .text("\uf0c1") // Ícone de link do FontAwesome
+            .attr("x", function(d) {
+                // Calcula a largura do texto para posicionar o ícone à direita
+                const labelWidth = this.parentNode.querySelector(".node-label").getComputedTextLength();
+                return labelWidth / 2 + 10; // Metade da largura + um espaçamento
+            })
+            .on("click", handleNodeClick);
+
+        // Função para mostrar informações do nó ao passar o mouse
+        function showNodeInfo(event, d) {
+            const infoTitle = document.getElementById("info-title");
+            const infoContent = document.getElementById("info-content");
+            const nodeInfo = document.getElementById("node-info");
+
+            infoTitle.textContent = d.label;
+
+            // Encontrar nós filhos
+            const children = graphData.links
+                .filter(link => link.source.id === d.id || (typeof link.source === 'string' && link.source === d.id))
+                .map(link => typeof link.target === 'string' ? link.target : link.target.id);
+
+            // Encontrar nó pai
+            const parents = graphData.links
+                .filter(link => link.target.id === d.id || (typeof link.target === 'string' && link.target === d.id))
+                .map(link => typeof link.source === 'string' ? link.source : link.source.id);
+
+            let content = "";
+
+            if (parents.length > 0) {
+                content += "<strong>Pai:</strong> " + parents.join(", ") + "<br>";
+            }
+
+            if (children.length > 0) {
+                content += "<strong>Filhos:</strong> " + children.join(", ") + "<br>";
+            }
+
+            if (d.url) {
+                content += "<strong>URL:</strong> " + d.url + "<br>";
+            }
+
+            infoContent.innerHTML = content;
+            nodeInfo.style.display = "block";
+        }
+
+        // Função para esconder informações do nó
+        function hideNodeInfo() {
+            document.getElementById("node-info").style.display = "none";
+        }
+
+        // Função para atualizar as posições durante a simulação
+        function ticked() {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+        }
+
+        // Funções para controle de arrastar (drag) dos nós
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Função para lidar com cliques nos rótulos e ícones
+        function handleNodeClick(event, d) {
+            // Verifica se o nó tem uma URL associada antes de abrir
+            if (d.url) {
+                // Constrói a URL baseada no repositório (assumindo que é um repo GitHub)
+                const baseUrl = "https://github.com/seu-usuario/seu-repositorio/blob/main/";
+                const fullUrl = baseUrl + d.url;
+                window.open(fullUrl, "_blank");
+            }
+        }
+
+        // Controles de zoom
+        d3.select("#zoom-in").on("click", () => {
+            containerSvg.transition().call(zoom.scaleBy, 1.3);
+        });
+
+        d3.select("#zoom-out").on("click", () => {
+            containerSvg.transition().call(zoom.scaleBy, 0.7);
+        });
+
+        d3.select("#reset-zoom").on("click", () => {
+            containerSvg.transition().call(
+                zoom.transform,
+                d3.zoomIdentity.translate(width / 2, height / 2).scale(1)
+            );
+        });
+
+        // Ajuste do SVG para responsividade (removido pois o container tem tamanho fixo)
+        // window.addEventListener("resize", () => { ... });
+
+        // Posiciona corretamente os ícones de link depois que o DOM estiver pronto
+        setTimeout(() => {
+            labelGroups.filter(d => d.url).select(".link-icon").each(function() {
+                const labelWidth = this.parentNode.querySelector(".node-label").getComputedTextLength();
+                d3.select(this).attr("x", labelWidth / 2 + 10);
+            });
+        }, 100);
+
+        // Inicia com um zoom adequado para visualizar o grafo completo
+        setTimeout(() => {
+            const initialScale = 0.5;
+            containerSvg.call(
+                zoom.transform,
+                d3.zoomIdentity
+                    .translate(width / 2, height / 2)
+                    .scale(initialScale)
+            );
+        }, 500);
+    </script>
+
     <h2>About Me</h2>
     <p>Sou Raul, um profissional apaixonado por transformar ideias em realidade através da tecnologia e da gestão estratégica. Sou um entusiasta da interseção entre Gerenciamento de Projetos, Desenvolvimento de Software e Inteligência Artificial. Acredito que a combinação dessas áreas é fundamental para construir soluções que não apenas funcionam, mas que também geram valor real e impacto positivo nos negócios e na sociedade.</p>
     <h2>Projects</h2>
@@ -65,242 +537,5 @@
         <li>Process Mining</li>
     </ul>
 </div>
-<script type="text/javascript">
-    // create an empty DataSet for nodes and edges
-    var nodes = new vis.DataSet();
-    var edges = new vis.DataSet();
-
-    // create a network
-    var container = document.getElementById('mynetwork');
-    var data = {
-        nodes: nodes,
-        edges: edges
-    };
-    var options = {
-        nodes: {
-            shape: 'dot',
-            scaling: {
-                min: 10,
-                max: 30
-            },
-            font: {
-                size: 12,
-                face: 'Tahoma'
-            }
-        },
-        edges: {
-            width: 0.15,
-            color: { inherit: 'from' },
-            smooth: {
-                type: 'continuous'
-            }
-        },
-        interaction: {
-            hover: true,
-            tooltipDelay: 200,
-            hideEdgesOnDrag: true
-        }
-    };
-    var network = new vis.Network(container, data, options);
-
-    var showInterval;
-
-    // function to fit the network
-    function fitNetwork() {
-        clearInterval(showInterval);
-        network.fit();
-        document.getElementById('showButton').innerText = 'Start a show!';
-    }
-
-    // function to toggle the show
-    function toggleShow() {
-        var showButton = document.getElementById('showButton');
-        if (showButton.innerText === 'Start a show!') {
-            startShow();
-            showButton.innerText = 'Stop the show!';
-        } else {
-            stopShow();
-            showButton.innerText = 'Start a show!';
-            fitNetwork();
-        }
-    }
-
-    // function to start a show
-    function startShow() {
-        var nodesArray = nodes.getIds();
-        var index = 0;
-        function moveToNextNode() {
-            if (index < nodesArray.length) {
-                network.focus(nodesArray[index], {scale: 1.5, animation: {duration: 1000, easingFunction: 'easeInOutQuad'}});
-                index++;
-            } else {
-                clearInterval(showInterval);
-            }
-        }
-        showInterval = setInterval(moveToNextNode, 1500);
-    }
-
-    // function to stop the show
-    function stopShow() {
-        clearInterval(showInterval);
-    }
-
-    // function to get a random color
-    function getRandomColor() {
-        var letters = '0123456789ABCDEF';
-        var color = '#';
-        for (var i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
-        }
-        return color;
-    }
-
-    // function to highlight neighbors and handle url clicks
-    network.on('click', function (params) {
-        var selectedNode = params.nodes[0];
-        if (selectedNode) {
-            var nodeData = nodes.get(selectedNode);
-            console.log('Node clicked:', nodeData);
-            console.log('Click params:', params.pointer.DOM);
-
-            // Se o clique foi na label (parte onde está o texto)
-            if (params.pointer.DOM.type === 'label') {
-                if (nodeData.url) {
-                    const baseUrl = 'https://rauldnp.github.io/myskills/';
-                    try {
-                        const absoluteUrl = new URL(nodeData.url, baseUrl).href;
-                        console.log('Opening URL:', absoluteUrl);
-                        window.open(absoluteUrl, '_blank');
-                    } catch (error) {
-                        console.error('Error opening URL:', error);
-                    }
-                }
-            } 
-            // Se o clique foi no nó (círculo)
-            else {
-                // Destacar os nós vizinhos
-                var allNodes = nodes.get({ returnType: 'Object' });
-                var connectedNodes = network.getConnectedNodes(selectedNode);
-                var updateArray = [];
-
-                for (var nodeId in allNodes) {
-                    if (allNodes.hasOwnProperty(nodeId)) {
-                        allNodes[nodeId].color = connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode 
-                            ? 'red' 
-                            : 'gray';
-                        updateArray.push(allNodes[nodeId]);
-                    }
-                }
-                nodes.update(updateArray);
-            }
-        }
-    });
-
-    async function fetchSkillsTable() {
-        try {
-            const response = await fetch('skills_table.md');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const text = await response.text();
-            console.log('Fetched skills table:', text); // Log the fetched markdown content
-            return text;
-        } catch (error) {
-            console.error('Error fetching skills table:', error);
-        }
-    }
-
-    function parseSkillsTable(md) {
-        try {
-            console.log('Raw markdown content:', md); // Log the raw markdown content
-            const lines = md.split('\n');
-            console.log('Split lines:', lines); // Log the split lines
-            const headers = lines[2].split('|').map(header => header.trim()).filter(header => header !== '');
-            console.log('Parsed headers:', headers); // Log the parsed headers
-            if (headers.length === 0) {
-                throw new Error('No headers found in the markdown content');
-            }
-            const data = lines.slice(3).map(line => {
-                if (line.includes('---')) return null; // Skip separator lines
-                const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
-                console.log('Parsed cells:', cells); // Log the parsed cells
-                if (cells.length !== headers.length) {
-                    console.warn('Skipping line due to mismatched cell count:', line);
-                    return null;
-                }
-                return headers.reduce((obj, header, index) => {
-                    obj[header] = cells[index];
-                    return obj;
-                }, {});
-            }).filter(row => row !== null);
-            console.log('Parsed skills table:', data); // Log the parsed data
-            return data;
-        } catch (error) {
-            console.error('Error parsing skills table:', error);
-        }
-    }
-
-    async function updateGraph() {
-        try {
-            const md = await fetchSkillsTable();
-            if (!md) return; // Exit if fetching failed
-            const skills = parseSkillsTable(md);
-
-            const newNodes = [];
-            const newEdges = [];
-            const nodeIds = new Set();
-
-            skills.forEach(skill => {
-                console.log('Processing skill:', skill);
-                // Extrair a URL do markdown removendo os colchetes
-                const urlMatch = skill['Link para Detalhamento'].match(/\[(.*?)\]\((.*?)\)/);
-                const url = urlMatch ? urlMatch[2] : '';
-                console.log('Extracted URL:', url); // Log da URL extraída
-                
-                if (!nodeIds.has(skill['Item Pai'])) {
-                    newNodes.push({ 
-                        id: skill['Item Pai'], 
-                        label: skill['Item Pai'] + ' 📎',
-                        title: 'Clique no 📎 para abrir o link',
-                        color: getRandomColor(), 
-                        shape: 'circle', 
-                        font: { vadjust: 50 }, 
-                        url: url 
-                    });
-                    nodeIds.add(skill['Item Pai']);
-                }
-                
-                if (!nodeIds.has(skill['Texto para Visualização no Gráfico'])) {
-                    newNodes.push({ 
-                        id: skill['Texto para Visualização no Gráfico'], 
-                        label: skill['Texto para Visualização no Gráfico'] + ' 📎',
-                        title: 'Clique no 📎 para abrir o link',
-                        color: getRandomColor(), 
-                        shape: 'circle', 
-                        font: { vadjust: 50 }, 
-                        url: url 
-                    });
-                    nodeIds.add(skill['Texto para Visualização no Gráfico']);
-                }
-                
-                newEdges.push({ from: skill['Item Pai'], to: skill['Texto para Visualização no Gráfico'] });
-            });
-
-            console.log('New nodes:', newNodes); // Log the new nodes
-            console.log('New edges:', newEdges); // Log the new edges
-
-            nodes.clear();
-            edges.clear();
-            nodes.add(newNodes);
-            edges.add(newEdges);
-
-            console.log('Graph updated successfully'); // Log the graph update
-        } catch (error) {
-            console.error('Error updating graph:', error);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', updateGraph);
-</script>
 </body>
 </html>
