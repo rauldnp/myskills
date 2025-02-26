@@ -278,11 +278,11 @@
             skills.forEach(skill => {
                 console.log('Processing skill:', skill); // Log each skill being processed
                 if (!nodeIds.has(skill['Item Pai'])) {
-                    newNodes.push({ id: skill['Item Pai'], label: skill['Item Pai'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 }, url: skill['Link para Detalhamento'] });
+                    newNodes.push({ id: skill['Item Pai'], label: skill['Item Pai'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 }, url: skill['Link para Detalhamento'].match(/\(([^)]+)\)/)[1] });
                     nodeIds.add(skill['Item Pai']);
                 }
                 if (!nodeIds.has(skill['Texto para Visualização no Gráfico'])) {
-                    newNodes.push({ id: skill['Texto para Visualização no Gráfico'], label: skill['Texto para Visualização no Gráfico'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 }, url: skill['Link para Detalhamento'] });
+                    newNodes.push({ id: skill['Texto para Visualização no Gráfico'], label: skill['Texto para Visualização no Gráfico'], color: getRandomColor(), shape: 'circle', font: { vadjust: 50 }, url: skill['Link para Detalhamento'].match(/\(([^)]+)\)/)[1] });
                     nodeIds.add(skill['Texto para Visualização no Gráfico']);
                 }
                 newEdges.push({ from: skill['Item Pai'], to: skill['Texto para Visualização no Gráfico'] });
