@@ -160,40 +160,43 @@
         var selectedNode = params.nodes[0];
         if (selectedNode) {
             var nodeData = nodes.get(selectedNode);
-            console.log('Node data:', nodeData);
-            
-            // Abrir a URL se existir, independente da posição do clique
-            if (nodeData.url) {
-                console.log('Original URL:', nodeData.url);
-                try {
+            console.log('Node clicked:', nodeData);
+
+            // Verificar se o clique foi no rótulo (nome + ícone)
+            var clickEvent = params.event;
+            var domNode = clickEvent.target;
+            console.log('Clicked element:', domNode.tagName);
+
+            // Se o clique foi em um elemento de texto (rótulo ou ícone)
+            if (domNode.tagName === 'text' || domNode.tagName === 'tspan') {
+                if (nodeData.url) {
                     const baseUrl = 'https://rauldnp.github.io/myskills/';
-                    console.log('Base URL:', baseUrl);
-                    const absoluteUrl = new URL(nodeData.url, baseUrl).href;
-                    console.log('Absolute URL:', absoluteUrl);
-                    window.open(absoluteUrl, '_blank');
-                } catch (error) {
-                    console.error('Error constructing URL:', error);
-                }
-            } else {
-                console.log('No URL found for node');
-            }
-
-            // Highlight neighbors
-            var allNodes = nodes.get({ returnType: 'Object' });
-            var connectedNodes = network.getConnectedNodes(selectedNode);
-            var updateArray = [];
-
-            for (var nodeId in allNodes) {
-                if (allNodes.hasOwnProperty(nodeId)) {
-                    if (connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode) {
-                        allNodes[nodeId].color = 'red';
-                    } else {
-                        allNodes[nodeId].color = 'gray';
+                    try {
+                        const absoluteUrl = new URL(nodeData.url, baseUrl).href;
+                        console.log('Opening URL:', absoluteUrl);
+                        window.open(absoluteUrl, '_blank');
+                    } catch (error) {
+                        console.error('Error opening URL:', error);
                     }
-                    updateArray.push(allNodes[nodeId]);
                 }
+            } 
+            // Se o clique foi no círculo
+            else {
+                // Destacar os nós vizinhos
+                var allNodes = nodes.get({ returnType: 'Object' });
+                var connectedNodes = network.getConnectedNodes(selectedNode);
+                var updateArray = [];
+
+                for (var nodeId in allNodes) {
+                    if (allNodes.hasOwnProperty(nodeId)) {
+                        allNodes[nodeId].color = connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode 
+                            ? 'red' 
+                            : 'gray';
+                        updateArray.push(allNodes[nodeId]);
+                    }
+                }
+                nodes.update(updateArray);
             }
-            nodes.update(updateArray);
         }
     });
 
