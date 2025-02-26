@@ -160,38 +160,49 @@
         var selectedNode = params.nodes[0];
         if (selectedNode) {
             var nodeData = nodes.get(selectedNode);
+            console.log('Node data:', nodeData); // Log dos dados do nó
+            
             var clickEvent = params.event;
             var rect = clickEvent.target.getBoundingClientRect();
             var clickX = clickEvent.clientX - rect.left;
             var clickWidth = rect.width;
             
+            console.log('Click position:', { x: clickX, width: clickWidth }); // Log da posição do clique
+            
             // Se o clique foi na parte final do nó (onde está o ícone)
             if (clickX > clickWidth * 0.8) {
+                console.log('Click on icon detected'); // Log de detecção do clique no ícone
                 if (nodeData.url) {
+                    console.log('Original URL:', nodeData.url); // Log da URL original
                     // Verifica se a URL é relativa e a converte para absoluta
                     const baseUrl = window.location.href.replace(/\/[^/]*$/, '/');
+                    console.log('Base URL:', baseUrl); // Log da URL base
                     const absoluteUrl = new URL(nodeData.url, baseUrl).href;
+                    console.log('Absolute URL:', absoluteUrl); // Log da URL absoluta
                     window.open(absoluteUrl, '_blank');
+                } else {
+                    console.log('No URL found for node'); // Log quando não há URL
                 }
+            } else {
+                console.log('Click outside icon area'); // Log quando o clique é fora do ícone
             }
-
-            // Highlight neighbors
-            var allNodes = nodes.get({ returnType: 'Object' });
-            var connectedNodes = network.getConnectedNodes(selectedNode);
-            var updateArray = [];
-
-            for (var nodeId in allNodes) {
-                if (allNodes.hasOwnProperty(nodeId)) {
-                    if (connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode) {
-                        allNodes[nodeId].color = 'red';
-                    } else {
-                        allNodes[nodeId].color = 'gray';
-                    }
-                    updateArray.push(allNodes[nodeId]);
-                }
-            }
-            nodes.update(updateArray);
         }
+        // Highlight neighbors
+        var allNodes = nodes.get({ returnType: 'Object' });
+        var connectedNodes = network.getConnectedNodes(selectedNode);
+        var updateArray = [];
+
+        for (var nodeId in allNodes) {
+            if (allNodes.hasOwnProperty(nodeId)) {
+                if (connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode) {
+                    allNodes[nodeId].color = 'red';
+                } else {
+                    allNodes[nodeId].color = 'gray';
+                }
+                updateArray.push(allNodes[nodeId]);
+            }
+        }
+        nodes.update(updateArray);
     });
 
     async function fetchSkillsTable() {
@@ -253,6 +264,7 @@
                 // Extrair a URL do markdown removendo os colchetes
                 const urlMatch = skill['Link para Detalhamento'].match(/\[(.*?)\]\((.*?)\)/);
                 const url = urlMatch ? urlMatch[2] : '';
+                console.log('Extracted URL:', url); // Log da URL extraída
                 
                 if (!nodeIds.has(skill['Item Pai'])) {
                     newNodes.push({ 
