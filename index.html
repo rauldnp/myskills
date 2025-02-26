@@ -155,7 +155,7 @@
         return color;
     }
 
-    // function to highlight neighbors
+    // function to highlight neighbors and handle url clicks
     network.on('click', function (params) {
         var selectedNode = params.nodes[0];
         if (selectedNode) {
@@ -173,52 +173,24 @@
                     window.open(cleanUrl, '_blank');
                 }
             }
-        }
-        var allNodes = nodes.get({ returnType: 'Object' });
-        var selectedNode = params.nodes[0];
-        var connectedNodes = network.getConnectedNodes(selectedNode);
-        var updateArray = [];
 
-        for (var nodeId in allNodes) {
-            if (allNodes.hasOwnProperty(nodeId)) {
-                if (connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode) {
-                    allNodes[nodeId].color = 'red';
-                } else {
-                    allNodes[nodeId].color = 'gray';
+            // Highlight neighbors
+            var allNodes = nodes.get({ returnType: 'Object' });
+            var connectedNodes = network.getConnectedNodes(selectedNode);
+            var updateArray = [];
+
+            for (var nodeId in allNodes) {
+                if (allNodes.hasOwnProperty(nodeId)) {
+                    if (connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode) {
+                        allNodes[nodeId].color = 'red';
+                    } else {
+                        allNodes[nodeId].color = 'gray';
+                    }
+                    updateArray.push(allNodes[nodeId]);
                 }
-                updateArray.push(allNodes[nodeId]);
             }
+            nodes.update(updateArray);
         }
-        nodes.update(updateArray);
-    });
-
-    network.on('click', function (click) {
-        var rect = click.event.target.getBoundingClientRect();
-        let correctedX = click.event.x - rect.x;
-        let correctedY = click.event.y - rect.y;
-        var nodeId = network.getNodeAt({ x: correctedX, y: correctedY });
-        if (nodeId) {
-            var nodeData = nodes.get(nodeId);
-            if (nodeData.url) {
-                window.open(nodeData.url, '_blank');
-            }
-        }
-        var allNodes = nodes.get({ returnType: 'Object' });
-        var selectedNode = params.nodes[0];
-        var connectedNodes = network.getConnectedNodes(selectedNode);
-        var updateArray = [];
-
-        for (var nodeId in allNodes) {
-            if (allNodes.hasOwnProperty(nodeId)) {
-                if (connectedNodes.includes(parseInt(nodeId)) || nodeId == selectedNode) {
-                    allNodes[nodeId].color = 'red';
-                } else {
-                    allNodes[nodeId].color = 'gray';
-                }
-                updateArray.push(allNodes[nodeId]);
-            }
-        }
-        nodes.update(updateArray);
     });
 
     async function fetchSkillsTable() {
