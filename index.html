@@ -160,7 +160,6 @@
         var selectedNode = params.nodes[0];
         if (selectedNode) {
             var nodeData = nodes.get(selectedNode);
-            // Verifica se o clique foi no ícone (parte final do texto)
             var clickEvent = params.event;
             var rect = clickEvent.target.getBoundingClientRect();
             var clickX = clickEvent.clientX - rect.left;
@@ -169,8 +168,10 @@
             // Se o clique foi na parte final do nó (onde está o ícone)
             if (clickX > clickWidth * 0.8) {
                 if (nodeData.url) {
-                    const cleanUrl = nodeData.url.replace(/\[|\]/g, '');
-                    window.open(cleanUrl, '_blank');
+                    // Verifica se a URL é relativa e a converte para absoluta
+                    const baseUrl = window.location.href.replace(/\/[^/]*$/, '/');
+                    const absoluteUrl = new URL(nodeData.url, baseUrl).href;
+                    window.open(absoluteUrl, '_blank');
                 }
             }
 
@@ -249,7 +250,9 @@
 
             skills.forEach(skill => {
                 console.log('Processing skill:', skill);
-                const url = skill['Link para Detalhamento'].match(/\(([^)]+)\)/)[1];
+                // Extrair a URL do markdown removendo os colchetes
+                const urlMatch = skill['Link para Detalhamento'].match(/\[(.*?)\]\((.*?)\)/);
+                const url = urlMatch ? urlMatch[2] : '';
                 
                 if (!nodeIds.has(skill['Item Pai'])) {
                     newNodes.push({ 
