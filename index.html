@@ -160,8 +160,18 @@
         var selectedNode = params.nodes[0];
         if (selectedNode) {
             var nodeData = nodes.get(selectedNode);
-            if (nodeData.url) {
-                window.open(nodeData.url, '_blank');
+            // Verifica se o clique foi no ícone (parte final do texto)
+            var clickEvent = params.event;
+            var rect = clickEvent.target.getBoundingClientRect();
+            var clickX = clickEvent.clientX - rect.left;
+            var clickWidth = rect.width;
+            
+            // Se o clique foi na parte final do nó (onde está o ícone)
+            if (clickX > clickWidth * 0.8) {
+                if (nodeData.url) {
+                    const cleanUrl = nodeData.url.replace(/\[|\]/g, '');
+                    window.open(cleanUrl, '_blank');
+                }
             }
         }
         var allNodes = nodes.get({ returnType: 'Object' });
@@ -272,8 +282,8 @@
                 if (!nodeIds.has(skill['Item Pai'])) {
                     newNodes.push({ 
                         id: skill['Item Pai'], 
-                        label: skill['Item Pai'], 
-                        title: '🔗 Clique para mais detalhes',
+                        label: skill['Item Pai'] + ' 📎',
+                        title: 'Clique no 📎 para abrir o link',
                         color: getRandomColor(), 
                         shape: 'circle', 
                         font: { vadjust: 50 }, 
@@ -285,8 +295,8 @@
                 if (!nodeIds.has(skill['Texto para Visualização no Gráfico'])) {
                     newNodes.push({ 
                         id: skill['Texto para Visualização no Gráfico'], 
-                        label: skill['Texto para Visualização no Gráfico'],
-                        title: '🔗 Clique para mais detalhes',
+                        label: skill['Texto para Visualização no Gráfico'] + ' 📎',
+                        title: 'Clique no 📎 para abrir o link',
                         color: getRandomColor(), 
                         shape: 'circle', 
                         font: { vadjust: 50 }, 
