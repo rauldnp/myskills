@@ -162,10 +162,10 @@
             var nodeData = nodes.get(selectedNode);
             console.log('Node data:', nodeData);
             
+            // Abrir a URL se existir, independente da posição do clique
             if (nodeData.url) {
                 console.log('Original URL:', nodeData.url);
                 try {
-                    // Construir a URL base a partir do domínio GitHub Pages
                     const baseUrl = 'https://rauldnp.github.io/myskills/';
                     console.log('Base URL:', baseUrl);
                     const absoluteUrl = new URL(nodeData.url, baseUrl).href;
