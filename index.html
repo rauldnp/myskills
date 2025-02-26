@@ -162,26 +162,26 @@
             var nodeData = nodes.get(selectedNode);
             console.log('Node clicked:', nodeData);
 
-            // Verificar se o clique foi no rótulo (nome + ícone)
-            var clickEvent = params.event;
-            var domNode = clickEvent.target;
-            console.log('Clicked element:', domNode.tagName);
+            // Obter a posição do nó e do clique
+            var nodePosition = network.getPositions([selectedNode])[selectedNode];
+            var clickPosition = {
+                x: params.pointer.canvas.x,
+                y: params.pointer.canvas.y
+            };
+            
+            // Calcular a distância do clique até o centro do nó
+            var dx = clickPosition.x - nodePosition.x;
+            var dy = clickPosition.y - nodePosition.y;
+            var distance = Math.sqrt(dx*dx + dy*dy);
+            
+            console.log('Click analysis:', {
+                nodePosition,
+                clickPosition,
+                distance
+            });
 
-            // Se o clique foi em um elemento de texto (rótulo ou ícone)
-            if (domNode.tagName === 'text' || domNode.tagName === 'tspan') {
-                if (nodeData.url) {
-                    const baseUrl = 'https://rauldnp.github.io/myskills/';
-                    try {
-                        const absoluteUrl = new URL(nodeData.url, baseUrl).href;
-                        console.log('Opening URL:', absoluteUrl);
-                        window.open(absoluteUrl, '_blank');
-                    } catch (error) {
-                        console.error('Error opening URL:', error);
-                    }
-                }
-            } 
-            // Se o clique foi no círculo
-            else {
+            // Se a distância for menor que 20 pixels do centro (no círculo)
+            if (distance < 20) {
                 // Destacar os nós vizinhos
                 var allNodes = nodes.get({ returnType: 'Object' });
                 var connectedNodes = network.getConnectedNodes(selectedNode);
@@ -196,6 +196,19 @@
                     }
                 }
                 nodes.update(updateArray);
+            } 
+            // Se o clique foi mais longe do centro (no texto/ícone)
+            else {
+                if (nodeData.url) {
+                    const baseUrl = 'https://rauldnp.github.io/myskills/';
+                    try {
+                        const absoluteUrl = new URL(nodeData.url, baseUrl).href;
+                        console.log('Opening URL:', absoluteUrl);
+                        window.open(absoluteUrl, '_blank');
+                    } catch (error) {
+                        console.error('Error opening URL:', error);
+                    }
+                }
             }
         }
     });
